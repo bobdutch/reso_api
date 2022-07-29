@@ -85,6 +85,7 @@ module RESO
                 end
               end
             end
+            #threads.each(&:join)
           else
             return perform_call(endpoint, params)
           end
@@ -159,6 +160,7 @@ module RESO
 
       def perform_call(endpoint, params)
         uri = uri_for_endpoint(endpoint)
+        Rails.logger.info uri
         retries = 0
         if params.present?
           query = params.present? ? URI.encode_www_form(params).gsub("+", " ") : ""
@@ -173,18 +175,23 @@ module RESO
           end
           response = JSON(res.body) rescue res.body
           if response.is_a?(String) && response.include?('Bad Gateway')
-            raise StandardError
+            raise StandardError.new(response)
           elsif response.is_a?(String) && response.include?('Unauthorized')
             fresh_oauth2_payload
-            raise StandardError
+            raise StandardError.new(response)
           elsif response.is_a?(Hash) && response.has_key?("error")
-            raise StandardError
+            Rails.logger.info response['error']
+            if response['error'].is_a?(Hash) && response["error"].has_key?("message")
+              raise StandardError.new(response["error"]["message"])
+            else
+              raise StandardError.new(response["error"])
+            end
           elsif response.is_a?(Hash) && response.has_key?("retry-after")
             sleep response["retry-after"].to_i
             raise StandardError
           end
         rescue Net::ReadTimeout, StandardError
-          if (retries += 1) <= 5
+          if false# (retries += 1) <= 5
             sleep 10
             retry
           else
