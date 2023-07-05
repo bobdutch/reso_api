@@ -56,12 +56,13 @@ module RESO
             "$select": hash[:select],
             "$filter": hash[:filter],
             "$top": hash[:top] ||= 100,
-            "$skip": hash[:skip] ||= 0,
+            "$skip": hash[:skip],
             "$orderby": hash[:orderby] ||= RESOURCE_KEYS[method_name],
             "$skiptoken": hash[:skiptoken],
             "$expand": hash[:expand],
             "$count": hash[:count].to_s.presence,
-            "$debug": hash[:debug]
+            "$debug": hash[:debug],
+            "$ignorenulls": hash[:ignorenulls]
           }.compact
           if !block.nil?
             response = perform_call(endpoint, params)
